@@ -1,0 +1,24 @@
+from __future__ import annotations
+
+from typing import List, Optional
+
+from pydantic import Field
+
+from lnb.models._base import LnbBaseModel
+
+
+class SalesCatalogListItem(LnbBaseModel):
+    id: str = ""
+    name: Optional[str] = None
+    collection: Optional[str] = None
+    updated_at: Optional[str] = Field(None, alias="updatedAt")
+
+
+class SalesCatalog(LnbBaseModel):
+    id: str = ""
+    name: Optional[str] = None
+    collection: Optional[str] = None
+    description: Optional[str] = None
+    models: List[str] = Field(default_factory=list)
+    created_at: Optional[str] = Field(None, alias="createdAt")
+    updated_at: Optional[str] = Field(None, alias="updatedAt")
