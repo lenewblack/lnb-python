@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock
 
 import httpx
@@ -21,27 +21,25 @@ TOKEN_RESPONSE: Dict[str, Any] = {
 }
 
 
-def make_meta(
+def make_list_response(
+    items: List[Any],
     current_page: int = 1,
     total_pages: int = 1,
     has_more: bool = False,
-    total_items: int = 0,
+    total_items: Optional[int] = None,
     page_size: int = 20,
-) -> Dict[str, Any]:
-    return {
-        "currentPage": current_page,
-        "pageSize": page_size,
-        "totalItems": total_items,
-        "totalPages": total_pages,
-        "hasMore": has_more,
+) -> httpx.Response:
+    """Build an httpx.Response matching the real API format: body is a JSON array,
+    pagination info is in X-Pagination-* response headers."""
+    n = len(items)
+    headers = {
+        "X-Pagination-Current-Page": str(current_page),
+        "X-Pagination-Page-Size": str(page_size),
+        "X-Pagination-Total-Items": str(total_items if total_items is not None else n),
+        "X-Pagination-Total-Pages": str(total_pages),
+        "X-Pagination-Has-More": str(has_more).lower(),
     }
-
-
-def make_list_response(
-    data: list,
-    **meta_kwargs: Any,
-) -> Dict[str, Any]:
-    return {"data": data, **make_meta(**meta_kwargs)}
+    return httpx.Response(200, json=items, headers=headers)
 
 
 @pytest.fixture

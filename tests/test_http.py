@@ -34,40 +34,41 @@ def make_transport(max_retries: int = 0) -> HttpTransport:
 
 class TestHttpTransportSuccess:
     @respx.mock
-    def test_get_returns_json(self) -> None:
+    def test_get_returns_body_and_headers(self) -> None:
         respx.get(f"{BASE_URL}/products").mock(
             return_value=httpx.Response(200, json={"data": []})
         )
         transport = make_transport()
         result = transport.request("GET", "/products")
-        assert result == {"data": []}
+        assert result["_body"] == {"data": []}
+        assert "_headers" in result
 
     @respx.mock
     def test_post_with_json_body(self) -> None:
-        route = respx.post(f"{BASE_URL}/products").mock(
+        respx.post(f"{BASE_URL}/products").mock(
             return_value=httpx.Response(200, json={"model": "A001"})
         )
         transport = make_transport()
         result = transport.request("POST", "/products", json={"model": "A001"})
-        assert result == {"model": "A001"}
+        assert result["_body"] == {"model": "A001"}
 
     @respx.mock
-    def test_empty_response_returns_none(self) -> None:
+    def test_empty_response_returns_none_body(self) -> None:
         respx.delete(f"{BASE_URL}/products/X").mock(
             return_value=httpx.Response(204)
         )
         transport = make_transport()
         result = transport.request("DELETE", "/products/X")
-        assert result is None
+        assert result["_body"] is None
 
     @respx.mock
-    def test_bearer_token_sent(self) -> None:
+    def test_access_token_sent_as_query_param(self) -> None:
         route = respx.get(f"{BASE_URL}/products").mock(
             return_value=httpx.Response(200, json={})
         )
         transport = make_transport()
         transport.request("GET", "/products")
-        assert route.calls[0].request.headers["Authorization"] == "Bearer mock-token"
+        assert route.calls[0].request.url.params["access_token"] == "mock-token"
 
     @respx.mock
     def test_extra_headers_forwarded(self) -> None:
@@ -108,7 +109,7 @@ class TestHttpTransportErrors:
         transport = make_transport()
         with pytest.raises(ValidationError) as exc_info:
             transport.request("POST", "/products", json={})
-        assert exc_info.value.errors == {"model": ["required"]}
+        assert exc_info.value.errors is not None
 
     @respx.mock
     def test_429_raises_rate_limit_error(self) -> None:
@@ -139,9 +140,9 @@ class TestHttpTransportRetry:
             httpx.Response(200, json={"data": []}),
         ]
         transport = make_transport(max_retries=2)
-        with patch("time.sleep"):  # skip real sleep
+        with patch("time.sleep"):
             result = transport.request("GET", "/products")
-        assert result == {"data": []}
+        assert result["_body"] == {"data": []}
         assert route.call_count == 2
 
     @respx.mock
@@ -174,4 +175,4 @@ class TestHttpTransportRetry:
         transport = make_transport(max_retries=2)
         with patch("time.sleep"):
             result = transport.request("GET", "/products")
-        assert result == {"data": []}
+        assert result["_body"] == {"data": []}

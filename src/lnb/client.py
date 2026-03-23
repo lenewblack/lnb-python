@@ -6,6 +6,7 @@ import httpx
 
 from lnb._auth import TokenManager
 from lnb._http import HttpTransport
+from lnb._version import __version__
 from lnb.services.collections import CollectionService
 from lnb.services.fabrics import FabricService
 from lnb.services.files import FileService
@@ -28,6 +29,8 @@ DEFAULT_MAX_RETRIES = 3
 class LnbClient:
     """Main entry point for the Le New Black Wholesale API SDK.
 
+    The SDK version is available as ``LnbClient.VERSION``.
+
     Example::
 
         import lnb
@@ -45,6 +48,9 @@ class LnbClient:
         with lnb.LnbClient("id", "secret") as client:
             order = client.orders.get("ORD-001")
     """
+
+    VERSION = __version__
+    """Current SDK version string."""
 
     def __init__(
         self,
@@ -160,6 +166,12 @@ class LnbClient:
         if self._invoices is None:
             self._invoices = InvoiceService(self._transport)
         return self._invoices
+
+    def version(self) -> "ApiVersion":
+        """Return the current API version information from the server."""
+        from lnb.models.api_version import ApiVersion  # local import avoids circular dep
+        raw = self._transport.request("GET", "/version")
+        return ApiVersion.model_validate(raw)
 
     def close(self) -> None:
         """Close the underlying HTTP client and release resources."""

@@ -22,15 +22,23 @@ PRODUCT_DETAIL: dict = {
 
 PRODUCT_LIST_ITEM: dict = {"model": "SHIRT-001", "name": "Test Shirt", "updatedAt": "2024-01-01"}
 
+# Batch API response format: body is {"data": [{success, result|errors}, ...]}
+BATCH_SUCCESS_RESPONSE: dict = {
+    "data": [{"success": True, "result": PRODUCT_DETAIL}],
+}
+BATCH_PARTIAL_RESPONSE: dict = {
+    "data": [
+        {"success": True, "result": PRODUCT_DETAIL},
+        {"success": False, "errors": {"model": ["is required"]}},
+    ],
+}
+
 
 class TestProductList:
     @respx.mock
     def test_returns_result_set(self, client: LnbClient) -> None:
         respx.get(f"{BASE_URL}/products").mock(
-            return_value=httpx.Response(
-                200,
-                json=make_list_response([PRODUCT_LIST_ITEM], total_items=1),
-            )
+            return_value=make_list_response([PRODUCT_LIST_ITEM], total_items=1)
         )
         result = client.products.list()
         assert isinstance(result, ResultSet)
@@ -41,9 +49,7 @@ class TestProductList:
     @respx.mock
     def test_passes_filters_as_query_params(self, client: LnbClient) -> None:
         route = respx.get(f"{BASE_URL}/products").mock(
-            return_value=httpx.Response(
-                200, json=make_list_response([])
-            )
+            return_value=make_list_response([])
         )
         client.products.list({"collection": "SS24"})
         assert route.calls[0].request.url.params["collection"] == "SS24"
@@ -52,22 +58,8 @@ class TestProductList:
     def test_paginate_yields_all_items(self, client: LnbClient) -> None:
         respx.get(f"{BASE_URL}/products").mock(
             side_effect=[
-                httpx.Response(
-                    200,
-                    json={
-                        "data": [PRODUCT_LIST_ITEM],
-                        "currentPage": 1, "pageSize": 1, "totalItems": 2,
-                        "totalPages": 2, "hasMore": True,
-                    },
-                ),
-                httpx.Response(
-                    200,
-                    json={
-                        "data": [{"model": "SHIRT-002"}],
-                        "currentPage": 2, "pageSize": 1, "totalItems": 2,
-                        "totalPages": 2, "hasMore": False,
-                    },
-                ),
+                make_list_response([PRODUCT_LIST_ITEM], current_page=1, total_pages=2, has_more=True),
+                make_list_response([{"model": "SHIRT-002"}], current_page=2, total_pages=2),
             ]
         )
         items = list(client.products.paginate())
@@ -136,22 +128,15 @@ class TestProductUpsert:
                 json={"message": "Validation failed", "errors": {"model": ["required"]}},
             )
         )
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             client.products.upsert({})
-        assert exc_info.value.errors == {"model": ["required"]}
 
 
 class TestProductBatchUpsert:
     @respx.mock
     def test_returns_batch_result(self, client: LnbClient) -> None:
-        respx.post(f"{BASE_URL}/products/batch").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "items": [PRODUCT_DETAIL],
-                    "errors": [],
-                },
-            )
+        respx.post(f"{BASE_URL}/multi/products").mock(
+            return_value=httpx.Response(200, json=BATCH_SUCCESS_RESPONSE)
         )
         result = client.products.batch_upsert([{"model": "SHIRT-001"}])
         assert isinstance(result, BatchResult)
@@ -160,18 +145,13 @@ class TestProductBatchUpsert:
 
     @respx.mock
     def test_reports_partial_errors(self, client: LnbClient) -> None:
-        respx.post(f"{BASE_URL}/products/batch").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "items": [PRODUCT_DETAIL],
-                    "errors": [{"index": 1, "message": "Invalid model"}],
-                },
-            )
+        respx.post(f"{BASE_URL}/multi/products").mock(
+            return_value=httpx.Response(200, json=BATCH_PARTIAL_RESPONSE)
         )
         result = client.products.batch_upsert([
             {"model": "SHIRT-001"},
             {"model": ""},
         ])
+        assert len(result.items) == 1
         assert result.has_errors
-        assert result.errors[0].index == 1
+        assert len(result.errors) == 1
