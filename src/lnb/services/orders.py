@@ -54,9 +54,9 @@ class OrderService(BaseService):
         options: Optional[RequestOptions] = None,
     ) -> OrderStatusUpdate:
         raw = self._request(
-            "PUT",
-            f"{self._PATH}/{reference}/status",
-            json={"status": status},
+            "POST",
+            f"{self._PATH}/status",
+            json={"reference": reference, "status": status},
             options=options,
         )
         return self._parse(OrderStatusUpdate, raw)

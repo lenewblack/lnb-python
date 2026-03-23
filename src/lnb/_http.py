@@ -56,17 +56,18 @@ class HttpTransport:
         for attempt in self._retry.attempts():
             token = self._token_manager.get_token()
             headers: Dict[str, str] = {
-                "Authorization": f"Bearer {token}",
                 "Accept": "application/json",
+                "Content-Type": "application/json",
                 **opts.get("extra_headers", {}),
             }
             timeout = opts.get("timeout", None)
+            auth_params: Dict[str, Any] = {"access_token": token, **(params or {})}
 
             try:
                 response = self._client.request(
                     method,
                     url,
-                    params=params,
+                    params=auth_params,
                     json=json,
                     data=data,
                     files=files,
@@ -82,8 +83,8 @@ class HttpTransport:
 
             if response.is_success:
                 if not response.content:
-                    return None
-                return response.json()
+                    return {"_body": None, "_headers": dict(response.headers)}
+                return {"_body": response.json(), "_headers": dict(response.headers)}
 
             retry_after = response.headers.get("Retry-After")
             if attempt.should_retry(response.status_code, retry_after):
@@ -101,14 +102,20 @@ class HttpTransport:
         except Exception:
             body = {}
 
-        message: str = body.get("message", f"HTTP {status}")
+        error_obj = body.get("error") or {}
+        message: str = (
+            error_obj.get("message")
+            or body.get("message")
+            or f"HTTP {status}"
+        )
 
         if status == 401:
             raise AuthenticationError(message)
         if status == 404:
             raise NotFoundError(message)
         if status == 422:
-            raise ValidationError(message, errors=body.get("errors"))
+            errors = body.get("errors") or error_obj.get("errors") or body
+            raise ValidationError(message, errors=errors)
         if status == 429:
             raise RateLimitError(message)
         raise LnbApiError(message, status_code=status, body=body)

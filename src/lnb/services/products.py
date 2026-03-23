@@ -109,8 +109,8 @@ class ProductService(BaseService):
         """Create or update multiple products in a single request."""
         raw = self._request(
             "POST",
-            f"{self._PATH}/batch",
-            json={"items": items},
+            "multi/products",
+            json={"requests": items},
             options=options,
         )
         return BatchResult.from_raw(Product, raw)

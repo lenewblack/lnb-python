@@ -27,8 +27,20 @@ class BatchResult(Generic[T]):
 
     @classmethod
     def from_raw(cls, model: Type[T], raw: Dict[str, Any]) -> "BatchResult[T]":
-        items = [model.model_validate(i) for i in raw.get("items", [])]
-        errors = [BatchError.model_validate(e) for e in raw.get("errors", [])]
+        body = raw.get("_body") if "_body" in raw else raw
+        if not body:
+            body = {}
+        data = body.get("data", [])
+        items = [model.model_validate(i.get("result") or i) for i in data if i.get("success")]
+        errors_raw = [i for i in data if not i.get("success")]
+        errors = [
+            BatchError.model_validate({
+                "index": idx,
+                "message": str(i.get("errors", "")),
+                "errors": i.get("errors"),
+            })
+            for idx, i in enumerate(errors_raw)
+        ]
         return cls(items=items, errors=errors)
 
     @property

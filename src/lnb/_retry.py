@@ -4,7 +4,7 @@ import random
 import time
 from typing import Iterator, Optional
 
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+RETRYABLE_STATUS_CODES = {429, 502, 503, 504}
 BASE_DELAY = 0.5  # seconds
 MAX_DELAY = 60.0  # seconds
 

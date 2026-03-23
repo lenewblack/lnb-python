@@ -55,7 +55,7 @@ class TokenManager:
         try:
             response = httpx.post(
                 self._token_url,
-                data={
+                json={
                     "grant_type": "client_credentials",
                     "client_id": self._client_id,
                     "client_secret": self._client_secret,
@@ -73,7 +73,14 @@ class TokenManager:
             ) from exc
 
         data = response.json()
+        expire_on = data.get("expire_on")
+        if expire_on:
+            import datetime
+            expires_at = datetime.datetime.fromisoformat(expire_on.replace("Z", ""))
+            expires_in = max(0, int((expires_at - datetime.datetime.utcnow()).total_seconds()))
+        else:
+            expires_in = int(data.get("expires_in", 3600))
         self._token = _TokenResponse(
             access_token=data["access_token"],
-            expires_in=int(data.get("expires_in", 3600)),
+            expires_in=expires_in,
         )

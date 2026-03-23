@@ -37,6 +37,8 @@ class BaseService:
         )
 
     def _parse(self, model: Type[M], data: Any) -> M:
+        if isinstance(data, dict) and "_body" in data:
+            data = data["_body"]
         return model.model_validate(data)
 
     def _parse_list(self, model: Type[M], data: List[Any]) -> List[M]:

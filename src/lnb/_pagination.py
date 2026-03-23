@@ -34,14 +34,34 @@ class ResultSet(Generic[T]):
     def from_raw(cls, model: Type[T], raw: Dict[str, Any]) -> "ResultSet[T]":
         """Deserialize a raw API response dict into a typed ResultSet.
 
-        Handles both ``{"data": [...], ...}`` and ``{"items": [...], ...}``
-        response envelope shapes.
+        The API returns a plain JSON array as the body with pagination
+        metadata in response headers (X-Pagination-*).
         """
-        data_key = "data" if "data" in raw else "items"
-        items = [model.model_validate(i) for i in raw.get(data_key, [])]
-        # PaginationMeta fields may be at the top level or under "meta"
-        meta_source = raw.get("meta", raw)
-        meta = PaginationMeta.model_validate(meta_source)
+        body = raw.get("_body") or []
+        headers = raw.get("_headers", {})
+
+        items = [model.model_validate(i) for i in (body if isinstance(body, list) else [])]
+
+        def _int(key: str, default: int) -> int:
+            val = headers.get(key) or headers.get(key.lower())
+            try:
+                return int(val) if val is not None else default
+            except (ValueError, TypeError):
+                return default
+
+        def _bool(key: str, default: bool) -> bool:
+            val = headers.get(key) or headers.get(key.lower())
+            if val is None:
+                return default
+            return str(val).lower() == "true"
+
+        meta = PaginationMeta.model_validate({
+            "currentPage": _int("X-Pagination-Current-Page", 1),
+            "pageSize": _int("X-Pagination-Page-Size", len(items)),
+            "totalItems": _int("X-Pagination-Total-Items", len(items)),
+            "totalPages": _int("X-Pagination-Total-Pages", 1),
+            "hasMore": _bool("X-Pagination-Has-More", False),
+        })
         return cls(items=items, meta=meta)
 
 
