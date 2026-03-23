@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-03-24
+## [1.0.0] - 2026-03-24
 
 ### Added
 
@@ -23,5 +23,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resources: `products`, `orders`, `inventory`, `prices`, `collections`, `fabrics`, `retailers`, `files`, `sales_documents`, `sales_catalogs`, `selections`, `sizings`, `invoices`
 - 42 tests covering auth, HTTP transport, pagination, and product service (82% coverage)
 
-[Unreleased]: https://github.com/lenewblack/lnb-python/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/lenewblack/lnb-python/releases/tag/v0.1.0
+[Unreleased]: https://github.com/lenewblack/lnb-python/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/lenewblack/lnb-python/releases/tag/v1.0.0

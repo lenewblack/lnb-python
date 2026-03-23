@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lnb-python"
-version = "0.1.0"
+version = "1.0.0"
 description = "Python SDK for the Le New Black Wholesale API v2"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -12,7 +12,7 @@ license = { text = "Proprietary" }
 authors = [{ name = "Le New Black" }]
 keywords = ["lenewblack", "wholesale", "api", "sdk"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
