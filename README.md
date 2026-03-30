@@ -156,7 +156,3 @@ mypy src/lnb
 # Lint
 ruff check src/lnb
 ```
-
-## License
-
-Proprietary — requires authorization from Le New Black.
