@@ -1,6 +1,10 @@
 # CLAUDE.md
 
-## Release Workflow
+## Project
+
+Python SDK for the Le New Black Wholesale v2 API. Published at [lenewblack/lnb-python](https://github.com/lenewblack/lnb-python).
+
+## Release process
 
 1. **Update CHANGELOG.md** — move items from `[Unreleased]` into a new version section using [Keep a Changelog](https://keepachangelog.com) format. Update the comparison links at the bottom.
 
@@ -23,6 +27,11 @@
 
 5. The `release.yml` workflow triggers automatically on version tags, runs the test suite, and publishes a GitHub Release.
 
+## CI
+
+- `ci.yml` — runs on every push and pull request; executes the test suite on Python 3.9, 3.10, 3.11, and 3.12
+- `release.yml` — triggers on `v*` tags; runs tests then publishes a GitHub Release
+
 ## Versioning
 
 This project follows [Semantic Versioning](https://semver.org):
@@ -30,11 +39,6 @@ This project follows [Semantic Versioning](https://semver.org):
 - **PATCH** (`0.1.x`) — bug fixes, no API changes
 - **MINOR** (`0.x.0`) — new backwards-compatible features or new resource methods
 - **MAJOR** (`x.0.0`) — breaking changes (renamed methods, removed parameters, changed model fields)
-
-## CI
-
-- `ci.yml` — runs on every push and pull request; executes the test suite on Python 3.9, 3.10, 3.11, and 3.12
-- `release.yml` — triggers on `v*` tags; runs tests then publishes a GitHub Release
 
 ## Development
 
